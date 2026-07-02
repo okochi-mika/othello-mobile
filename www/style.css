@@ -1,0 +1,110 @@
+/* 盤面のスタイル */
+
+* {
+    -webkit-tap-highlight-color: transparent; /* タップ時の青いハイライトを消す */
+    -webkit-touch-callout: none;
+    touch-action: manipulation; /* ダブルタップでのズームを抑制 */
+}
+
+html, body {
+    height: 100%;
+    overscroll-behavior: none; /* 引っ張って更新（バウンス）を抑制 */
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 0;
+
+    /* 👇 【大本命】オセロ盤のまわりに太い木の「縁（ふち）」をつける */
+    border: 3vmin solid #a0c49d; /* ポケモンの世界観に合う優しい緑 */
+    border-radius: 10px;         /* 縁の角をほんのり丸くする */
+
+    /* 👇 背景とオセロ盤をハッキリ切り離すために、盤の後ろに「影」を落とす */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+    background-color: #333;
+
+    /* 👇 画面幅・高さに合わせて盤のサイズを自動調整（スマホ対応） */
+    width: min(92vw, 92vh - 120px, 480px);
+    aspect-ratio: 1 / 1;
+    margin: 12px auto;
+    user-select: none;
+}
+
+/* ボードの位置を中央に寄せる */
+body {
+    /* 👇 画面の「縦幅いっぱい」を基準にするという魔法の指定 */
+    min-height: 100vh;
+    min-height: 100dvh; /* スマホのアドレスバー分の高さ変動に対応 */
+
+    /* 👇 中身を上下左右のど真ん中に整列させる3点セット */
+    display: flex;
+    flex-direction: column;   /* タイトルと盤面を縦に並べる */
+    justify-content: center;  /* 上下方向の真ん中 */
+    align-items: center;      /* 左右方向の真ん中 */
+
+    margin: 0;                /* 画面全体の余計な隙間をゼロにする */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); /* ノッチ・ホームバー避け */
+    box-sizing: border-box;
+    background-color: #f5f5f5; /* 背景を少し優しいグレーに（お好みで） */
+
+    /* 👇 背景画像の設定 */
+    background-image: url('images/haikei.png'); /* 画像の場所を指定 */
+    background-size: cover;                    /* 画面いっぱいに隙間なく画像を広げる */
+    background-position: center;               /* 画像の中心が画面の真ん中に来るようにする */
+    background-repeat: no-repeat;              /* 画面が大きくても画像がタイル状に繰り返さないようにする */
+}
+
+/* マスのスタイル */
+.cell {
+    background-color: #f9fbf9; /* スクショの綺麗な黄緑色に合わせています */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid black;
+    box-sizing: border-box;
+    width: 100%;  /* マスの幅と高さを自動に */
+    height: 100%;
+}
+/* 石のスタイル */
+.stone {
+    width: 82%;
+    height: 82%;
+    border-radius: 50%;
+    display: none; /* 最初は非表示 */
+}
+
+.black {
+    background-image: url('images/pikachu.png'); /* 黒の代わりに表示する画像ファイル名 */
+    background-size: cover;            /* マスの大きさに画像をピッタリ合わせる */
+    background-position: center;       /* 画像を中心におく */
+    display: block;
+}
+
+.white {
+    background-image: url('images/metamon.png'); /* 白の代わりに表示する画像ファイル名 */
+    background-size: cover;
+    background-position: center;
+    display: block;
+}
+
+/* タイトルのスタイル */
+h1 {
+    text-align: center;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: clamp(16px, 4.5vw, 26px); /* 画面幅に応じて文字サイズを調整 */
+    font-weight: bold;
+    color: #1e3d59; /* 文字の色を少しおしゃれな濃いネイビーに */
+    letter-spacing: 2px;
+
+    /* 👇 文字の後ろに丸みのある白い看板を敷く */
+    background-color: rgba(255, 255, 255, 0.9); /* 90%の濃い白 */
+    padding: 10px 20px;                         /* 看板の中の余白 */
+    border-radius: 50px;                        /* 完全に角を丸くしてカプセル型に */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);    /* うっすら影をつけて浮き立たせる */
+    margin: 8px 12px;
+    white-space: nowrap;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "othello-game-mobile",
+  "version": "1.0.0",
+  "description": "スマホ版オセロ風ゲーム",
+  "scripts": {
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
