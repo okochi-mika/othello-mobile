@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- スマホでの表示崩れ・拡大縮小を防ぐための重要な設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>シンプルオセロ風ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>次は: <span id="turn">ピカチュウ</span>の番</h1>
+
+    <div id="board"></div>
+
+    <script>
+        /* ==========================================================
+         * 【JavaScriptのコメント】
+         * ここからゲームの動きをコントロールするJavaScriptのプログラムです。
+         * ========================================================== */
+
+        // HTMLの要素（盤面とターンの文字）をプログラムで扱えるように取得
+        const board = document.getElementById('board');
+        const turnText = document.getElementById('turn');
+        let isBlackTurn = true; // trueならピカチュウ(黒)、falseならメタモン(白)
+
+        // 挟める石を探すための「8方向の進み方」を定義（[横の移動量, 縦の移動量]）
+        const directions = [
+            [-1, -1], [0, -1], [1, -1], // 左上、上、右上
+            [-1,  0],          [1,  0], // 左、  右
+            [-1,  1], [0,  1], [1,  1]  // 左下、下、右下
+        ];
+
+        // 盤面の状態を記録する配列（全64マス。0: 空白, 1: 黒, 2: 白）
+        let boardState = Array(64).fill(0);
+
+        // オセロの初期配置（中央の4マスに黒と白を2個ずつ配置）
+        boardState[27] = 2; // 白
+        boardState[28] = 1; // 黒
+        boardState[35] = 1; // 黒
+        boardState[36] = 2; // 白
+
+        /**
+         * 盤面を画面に描き出す（リフレッシュする）関数
+         */
+        function drawBoard() {
+            board.innerHTML = ''; // 一度、今表示されている盤面を完全にクリアする
+
+            // 0から63まで、計64回ループしてマス目を1つずつ作る
+            for (let i = 0; i < 64; i++) {
+                // マス目（cell）となるdiv要素を作る
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+
+                // 石（stone）となるdiv要素を作る
+                const stone = document.createElement('div');
+                stone.classList.add('stone');
+
+                // 配列（boardState）の中身に合わせて、石に黒か白のクラスをつける
+                if (boardState[i] === 1) stone.classList.add('black'); // 1なら黒石
+                if (boardState[i] === 2) stone.classList.add('white'); // 2なら白石
+
+                // マス目のなかに石を入れる
+                cell.appendChild(stone);
+
+                // このマス目がクリックされた時に、handleCellClick関数を実行するよう設定
+                cell.addEventListener('click', () => handleCellClick(i));
+
+                // 完成したマス目を、大枠の盤面（board）に追加する
+                board.appendChild(cell);
+            }
+        }
+
+        /**
+         * 🌟【新しく追加した関数】
+         * 現在のプレイヤーが、盤面全体のどこかに1箇所でも「置ける場所があるか」を調べる関数
+         * @param {number} color - 調べたいプレイヤーの色（1か2）
+         * @returns {boolean} - 1箇所でも置ければtrue、どこにも置けなければfalse
+         */
+        function hasValidMoves(color) {
+            // 0から63までの全マスを順番にチェックする
+            for (let i = 0; i < 64; i++) {
+                // もしすでに石があるマスなら飛ばす
+                if (boardState[i] !== 0) continue;
+
+                // 既存の「ひっくり返せる石を計算する関数」を使い、1つでもひっくり返せるか調べる
+                const stones = getStonesToFlip(i, color);
+                if (stones.length > 0) {
+                    return true; // 置ける場所を発見したら、その時点でtrueを返して終了
+                }
+            }
+            return false; // 64マス全て調べて、どこにも置けなければfalse
+        }
+
+        /**
+         * マス目がクリックされた時に動くメインの処理
+         * @param {number} index - クリックされたマスの番号（0〜63）
+         */
+        function handleCellClick(index) {
+            // もしすでに石が置かれているマスなら、何もせずに処理を終了する
+            if (boardState[index] !== 0) return;
+
+            // 今のターンの色を決定（黒なら1、白なら2）
+            const myColor = isBlackTurn ? 1 : 2;
+
+            // このマスに置いたとき、ひっくり返せる石のリスト（番号の配列）を取得する
+            const stonesToFlip = getStonesToFlip(index, myColor);
+
+            // ひっくり返せる石が「1つ以上」ある場合だけ、石を置くことができる
+            if (stonesToFlip.length > 0) {
+                boardState[index] = myColor; // クリックしたマスに自分の石を置く
+
+                // ひっくり返せるリストに入っているマスを、すべて自分の色に変える
+                stonesToFlip.forEach(i => boardState[i] = myColor);
+
+                // ターンを交代する（trueとfalseを反転させる）
+                isBlackTurn = !isBlackTurn;
+
+                // 画面上の「〇〇の番」という文字を書き換える
+                turnText.textContent = isBlackTurn ? 'ピカチュウ' : 'メタモン';
+
+                // 盤面のデータが変わったので、画面を新しく描き直す
+                drawBoard();
+
+                // ==========================================================
+                // 🌟【ここから自動パスのロジックを追加！】
+                // ==========================================================
+
+                // 交代した次のプレイヤーの色を決定する（黒なら1、白なら2）
+                const nextColor = isBlackTurn ? 1 : 2;
+
+                // もし次のプレイヤーに、置ける場所が「1箇所もなかったら」
+                if (!hasValidMoves(nextColor)) {
+
+                    // 【ゲーム終了チェック】
+                    // 相手が置けない上で、さらに「自分（nextColorを反転させた本来の相手）」も置けない場合
+                    // つまり、お互いにどこにも置けない状態なら完全にゲーム終了
+                    const currentOpponentColor = nextColor === 1 ? 2 : 1;
+                    if (!hasValidMoves(currentOpponentColor)) {
+                        alert("お互いに置ける場所がなくなりました。ゲーム終了です！");
+                        return; // 処理を完全に終わらせる
+                    }
+
+                    // 【パスの処理】
+                    // 相手だけが置けない場合は、誰がパスになるか名前を決めてアラートを出す
+                    const passedPlayerName = isBlackTurn ? 'ピカチュウ' : 'メタモン';
+                    alert(`${passedPlayerName}の置ける場所がないため、パスします！`);
+
+                    // もう一度ターンをひっくり返して自分に戻す
+                    isBlackTurn = !isBlackTurn;
+
+                    // 画面の「〇〇の番」という表示を、自分（パスされなかった方）の名前に戻す
+                    turnText.textContent = isBlackTurn ? 'ピカチュウ' : 'メタモン';
+                }
+                // ==========================================================
+                // 🌟【自動パスのロジックここまで】
+                // ==========================================================
+            }
+        }
+
+        /**
+         * 指定したマスに石を置いたとき、ひっくり返せる相手の石のリストを計算して返す関数
+         * @param {number} index - 石を置こうとしているマスの番号
+         * @param {number} myColor - 自分の色（1か2）
+         * @returns {number[]} - ひっくり返せるマスの番号が入った配列
+         */
+        function getStonesToFlip(index, myColor) {
+            // 相手の色を決定（自分が1なら相手は2、自分が2なら相手は1）
+            const oppColor = myColor === 1 ? 2 : 1;
+
+            // マス番号（0〜63）から、縦横の座標（X: 0〜7, Y: 0〜7）を計算する
+            const startX = index % 8;
+            const startY = Math.floor(index / 8);
+
+            // 最終的にひっくり返す石の番号をためておく配列
+            let flippedStones = [];
+
+            // 定義しておいた「8方向」を1方向ずつ順番にチェックするループ
+            for (const [dx, dy] of directions) {
+                let x = startX + dx; // 隣のマスのX座標
+                let y = startY + dy; // 隣のマスのY座標
+
+                // 今チェックしている直線上で「通ってきた相手の石」を一時的に記録する配列
+                let currentLineStones = [];
+
+                // 盤面の外に飛び出さない限り、その方向へ進み続ける
+                while (x >= 0 && x < 8 && y >= 0 && y < 8) {
+                    // 現在チェックしている座標を、配列のマス番号（0〜63）に逆変換
+                    const currentIndex = y * 8 + x;
+
+                    if (boardState[currentIndex] === oppColor) {
+                        // 1. 相手の石があったら：ひっくり返す候補リストに加えて、さらに1マス先へ進む
+                        currentLineStones.push(currentIndex);
+                    } else if (boardState[currentIndex] === myColor) {
+                        // 2. 自分の石にぶつかったら：挟むことに成功！
+                        // これまでに通ってきた相手の石を、最終リストに合流させて探索を終了する
+                        flippedStones = flippedStones.concat(currentLineStones);
+                        break;
+                    } else {
+                        // 3. 石が置かれていないマス（空白）だったら：挟めなかったので失敗、探索を終了する
+                        break;
+                    }
+
+                    // 次のループのために、さらに同じ方向へ座標を進める
+                    x += dx;
+                    y += dy;
+                }
+            }
+            // 8方向すべてを調べ終わったら、ひっくり返せる石のリストを返す
+            return flippedStones;
+        }
+
+        // ゲーム起動時に、最初の1回目として盤面を描画する
+        drawBoard();
+    </script>
+</body>
+</html>
