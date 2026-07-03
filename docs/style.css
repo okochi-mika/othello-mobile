@@ -85,7 +85,7 @@ body {
 }
 
 .white {
-    background-image: url('images/metamon.png'); /* 白の代わりに表示する画像ファイル名 */
+    background-image: url('images/pamo.png'); /* 白の代わりに表示する画像ファイル名 */
     background-size: cover;
     background-position: center;
     display: block;
